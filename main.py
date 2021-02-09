@@ -24,8 +24,20 @@ rates_frame = pd.DataFrame(get_rates())
 print(rates_frame)
 
 
-def last_index_of_rates():
+def last_index():
+    """
+
+    :return: Возвращает индекс последнего бара в массиве
+
+    """
     return len(get_rates()) - 1
 
 
-print(last_index_of_rates())
+n = last_index()
+print(n)
+
+for high in get_rates():
+    if get_rates()[n][2] > get_rates()[n - 1][2]:
+        print("Больше", get_rates()[n][2], get_rates()[n - 1][2])
+    else:
+        print("Хуй знает")
