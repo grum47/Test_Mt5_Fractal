@@ -14,12 +14,18 @@ pd.set_option('display.width', 1500)
 
 
 def get_rates():
+    """
+
+    :return: Возвращает значения баров за период от from_date до to_date
+
+    """
     from_date = datetime(2021, 1, 25, 10)
     to_date = datetime(2021, 1, 30)
-    rates = mt5.copy_rates_range(symbol, frame, from_date, to_date)
-    return rates
+    res = mt5.copy_rates_range(symbol, frame, from_date, to_date)
+    return res
 
 
+# Выводим на печать массив значений баров в виде таблицы
 rates_frame = pd.DataFrame(get_rates())
 print(rates_frame)
 
@@ -27,17 +33,32 @@ print(rates_frame)
 def last_index():
     """
 
-    :return: Возвращает индекс последнего бара в массиве
+    :return: Возвращает индекс 3-го бара с конца массива
+    Если в массиве 100 строк, то возвратит значение 97-й строки.
+    0-й бар - текущий.
 
     """
-    return len(get_rates()) - 1
+    return len(get_rates()) - len(get_rates())
 
 
+# Переназначаем переменные для упрощения написания дальнейших функций
+rates = get_rates()
 n = last_index()
 print(n)
 
-for high in get_rates():
-    if get_rates()[n][2] > get_rates()[n - 1][2]:
-        print("Больше", get_rates()[n][2], get_rates()[n - 1][2])
-    else:
-        print("Хуй знает")
+
+def fractal_up(n):
+    for _ in rates:
+        if rates[n + 2][2] > rates[n + 1][2] and \
+                rates[n + 2][2] > rates[n][2] and \
+                rates[n + 2][2] >= rates[n + 3][2] and \
+                rates[n + 2][2] >= rates[n + 4][2]:
+            print("Есть фрактал вверх. Точка фрактала = ", rates[n + 2][2])
+            return rates[n + 2][2]
+        else:
+            print("Нет фрактала", rates[n + 2][2])
+            n += 1
+
+
+high = fractal_up(n)
+print(high)
