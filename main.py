@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 import pandas as pd
 from datetime import datetime
+import numpy
 
 mt5.initialize()
 if not mt5.initialize():
@@ -22,3 +23,9 @@ def get_rates():
 
 rates_frame = pd.DataFrame(get_rates())
 print(rates_frame)
+
+
+def last_index_of_rates():
+    return len(get_rates()) - 1
+
+print(last_index_of_rates())
