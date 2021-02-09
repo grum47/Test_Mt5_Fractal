@@ -30,6 +30,9 @@ rates_frame = pd.DataFrame(get_rates())
 print(rates_frame)
 
 
+def get_price():
+    pass
+
 def last_index():
     """
 
@@ -56,9 +59,10 @@ def fractal_up(n):
             print("Есть фрактал вверх. Точка фрактала = ", rates[n + 2][2])
             return rates[n + 2][2]
         else:
-            print("Нет фрактала", rates[n + 2][2])
+            print("Нет фрактала")
+            # print("Нет фрактала", rates[n + 2][2])
             n += 1
 
 
-high = fractal_up(n)
-print(high)
+buy_price = fractal_up(n)
+# print(buy_price)
