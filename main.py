@@ -33,12 +33,11 @@ print(rates_frame)
 def get_price():
     pass
 
+
 def last_index():
     """
 
-    :return: Возвращает индекс 3-го бара с конца массива
-    Если в массиве 100 строк, то возвратит значение 97-й строки.
-    0-й бар - текущий.
+    :return: Возвращает индекс 0-го бара с начала массива
 
     """
     return len(get_rates()) - len(get_rates())
@@ -46,23 +45,35 @@ def last_index():
 
 # Переназначаем переменные для упрощения написания дальнейших функций
 rates = get_rates()
-n = last_index()
-print(n)
+high = last_index()
+print("high = ", high)
 
 
-def fractal_up(n):
+def fractal_up(high):
     for _ in rates:
-        if rates[n + 2][2] > rates[n + 1][2] and \
-                rates[n + 2][2] > rates[n][2] and \
-                rates[n + 2][2] >= rates[n + 3][2] and \
-                rates[n + 2][2] >= rates[n + 4][2]:
-            print("Есть фрактал вверх. Точка фрактала = ", rates[n + 2][2])
-            return rates[n + 2][2]
+        if rates[high + 2][2] > rates[high + 1][2] and \
+                rates[high + 2][2] > rates[high][2] and \
+                rates[high + 2][2] >= rates[high + 3][2] and \
+                rates[high + 2][2] >= rates[high + 4][2]:
+            print("Есть фрактал вверх. Точка фрактала = ", rates[high + 2][2])
+            flag_by_fractal_up = True
+            print("Flag Fractal BUY = ", flag_by_fractal_up)
+            return rates[high + 2][2], flag_by_fractal_up, rates[high + 2][0]
         else:
             print("Нет фрактала")
+            flag_by_fractal_up = False
+            print("Flag Fractal BUY = ", flag_by_fractal_up)
             # print("Нет фрактала", rates[n + 2][2])
-            n += 1
+            high += 1
 
 
-buy_price = fractal_up(n)
-# print(buy_price)
+buy_price = fractal_up(high)
+
+print("BUY PRICE = ", buy_price[0])
+print("Flag BUY - ", buy_price[1])
+print("Time, sec = ", buy_price[2])
+
+if buy_price[1] == True:
+    print("False")
+else:
+    print("True")
