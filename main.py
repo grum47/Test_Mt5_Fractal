@@ -73,32 +73,29 @@ rates = get_value_bars_main_timeframe(symbol, frame, from_date, to_date)
 rates_m1 = get_value_bars_m1_timeframe(symbol, from_date, to_date)
 rates_ticks = get_ticks_values(symbol, from_date, to_date)
 
+
 # Выводим на печать массив значений баров в виде таблицы
 
 # rates_frame = pd.DataFrame(rates)
 # rates_frame['time'] = pd.to_datetime(rates_frame['time'], unit='s')
 # print(rates_frame)
 
-# rates_frame_m1 = pd.DataFrame(rates_m1)
-# rates_frame_m1['time'] = pd.to_datetime(rates_frame_m1['time'], unit='s')
-# print(rates_frame_m1)
+rates_frame_m1 = pd.DataFrame(rates_m1)
+rates_frame_m1['time'] = pd.to_datetime(rates_frame_m1['time'], unit='s')
+print(rates_frame_m1)
 
 # ticks_frame = pd.DataFrame(get_ticks_values(symbol, from_date, to_date))
 # ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
 # print(ticks_frame)
 
-ind = 2
 
-
-def fractal_up(ind):
+def fractal_up(ind=2):
     """
-
     :param ind: Значение индекса столбца HIGH
     :return:
     """
     for _ in rates:
         flag_by_fractal_up = False
-        flag_to_open_pos_m1 = False
         if not flag_by_fractal_up:
             if rates['high'][ind] > rates['high'][ind - 1] and \
                     rates['high'][ind] > rates['high'][ind - 2] and \
@@ -106,28 +103,49 @@ def fractal_up(ind):
                     rates['high'][ind] >= rates['high'][ind + 2]:
                 print("Есть фрактал вверх. Точка фрактала = ", rates['high'][ind])
                 # print("Время фрактала", datetime.fromtimestamp(rates['time'][ind]))
-                print("Время фрактала", rates['time'][ind])
+                # print("Время фрактала", rates['time'][ind])
+                flag_to_open_pos_m1 = True
                 flag_by_fractal_up = True
-                time.sleep(5)
-        if flag_by_fractal_up:
-            if not flag_to_open_pos_m1:
-                for high in rates_m1:
-                    if high['high'] > rates['high'][ind]:
-                        print("Пересечение в точке - ", rates['high'][ind])
-                        print("Бар переченеия", high['high'])
-                        print("Время пересечения", high['time'])
-                        # ind_m1 += 1
-                        flag_to_open_pos_m1 = True
-                        time.sleep(5)
-            if flag_to_open_pos_m1:
+                time.sleep(1)
+                ind += 1
+                print(rates['time'][ind-1])
+                print(rates['high'][ind-1])
+                from_date = datetime.fromtimestamp(rates['time'][ind])
+                if flag_by_fractal_up:
+                    if flag_to_open_pos_m1:
+                        rates_m1 = get_value_bars_m1_timeframe(symbol, from_date, to_date)
+                        ind_m1 = 2
+                        for high in rates_m1:
+                            if rates_m1['high'][ind_m1] > rates['high'][ind-1]:
+                                print("Пересечение на минутном графике - Open -  ", rates_m1['open'][ind_m1])
+                                print("Пересечение на минутном графике - High - ", rates_m1['high'][ind_m1])
+                                print("Пересечение на минутном графике - Low - ", rates_m1['low'][ind_m1])
+                                print("Пересечение на минутном графике - Close - ", rates_m1['close'][ind_m1])
+                                flag_to_open_pos_ticks = True
+                                time.sleep(1)
+                                print(rates_m1['time'][ind_m1])
+                                from_date = datetime.fromtimestamp(rates_m1['time'][ind_m1])
+                                ind_m1 += 1
+                                if flag_to_open_pos_ticks:
+                                    rates_ticks = get_ticks_values(symbol, from_date, to_date)
+                                    ind_ticks = 2
+                                    for price in rates_ticks:
+                                        print(rates_ticks['last'][ind_ticks])
+                                        print(rates['high'][ind-1])
+                                        if rates_ticks['last'][ind_ticks] > rates['high'][ind-1]:
+                                            print("Пересечение на тиковом Графике", price)
+                                            print(rates_ticks['last'][ind_ticks])
+                                            time.sleep(2)
+                                            break
+                                        else:
+                                            ind_ticks += 1
+                            else:
+                                ind_m1 += 1
+            else:
+                ind += 1
 
-        else:
-            flag_by_fractal_up = True
-            print("Нет фрактала. Current High = ", rates['high'][ind])
-            ind += 1
 
-
-print(fractal_up(ind))
+print(fractal_up(ind=2))
 
 """
 # Присваивание переменным значений, пролучаемых в функции fractal_up
