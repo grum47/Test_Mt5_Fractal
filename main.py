@@ -1,6 +1,7 @@
+from datetime import datetime
+import time
 import MetaTrader5 as mt5
 import pandas as pd
-from datetime import datetime
 import pytz
 
 mt5.initialize()
@@ -10,29 +11,50 @@ if not mt5.initialize():
 
 symbol = "Si-3.21"
 frame = mt5.TIMEFRAME_M30
-"""pd.set_option('display.max_columns', 500)  # Количество столбцов
-pd.set_option('display.max_rows', 1000)  # Количество строк
-pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа"""
-
 timezone = pytz.timezone("Etc/UTC")
+from_date = datetime(2021, 1, 25, 10, tzinfo=timezone)
+print(from_date)
+to_date = datetime(2021, 1, 27, tzinfo=timezone)
+tp = 15
+sl = 60
+pd.set_option('display.max_columns', 500)  # Количество столбцов
+pd.set_option('display.max_rows', 1000)  # Количество строк
+pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа
 
 
-def get_rates():
+def get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
     """
 
     :return: Возвращает значения баров основного таймфрейма (М30) за период от from_date до to_date
 
     """
-    from_date = datetime(2021, 1, 25, 10, tzinfo=timezone)
-    to_date = datetime(2021, 1, 30, tzinfo=timezone)
-    res = mt5.copy_rates_range(symbol, frame, from_date, to_date)
-    return res
+
+    rates = mt5.copy_rates_range(symbol, frame, from_date, to_date)
+    return rates
 
 
-"""# Выводим на печать массив значений баров в виде таблицы
-rates_frame = pd.DataFrame(get_rates())
-rates_frame['time'] = pd.to_datetime(rates_frame['time'], unit='s')
-# print(rates_frame)"""
+def get_value_bars_m1_timeframe(symbol, from_date, to_date):
+    """
+
+    :param symbol: Используемый инструмент
+    :param from_date: Дата начала периода
+    :param to_date: Дата окончания периода
+    :return: Возвращает массив значений свечей по ТФ М1
+    """
+    rates_m1 = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, from_date, to_date)
+    return rates_m1
+
+
+def get_ticks_values(symbol, from_date, to_date):
+    """
+
+    :param symbol:
+    :param from_date:
+    :param to_date:
+    :return:
+    """
+    rates_ticks = mt5.copy_ticks_range(symbol, from_date, to_date, mt5.COPY_TICKS_INFO)
+    return rates_ticks
 
 
 def last_index():
@@ -41,49 +63,73 @@ def last_index():
     :return: Возвращает индекс 0-го бара с начала массива
 
     """
-    return len(get_rates()) - len(get_rates())
+    return len(get_value_bars_main_timeframe(symbol, frame, from_date, to_date)) - len(
+        get_value_bars_main_timeframe(symbol, frame, from_date, to_date))
 
 
 # Переназначаем переменные для упрощения написания дальнейших функций
-rates = get_rates()
-high = last_index()
+
+rates = get_value_bars_main_timeframe(symbol, frame, from_date, to_date)
+rates_m1 = get_value_bars_m1_timeframe(symbol, from_date, to_date)
+rates_ticks = get_ticks_values(symbol, from_date, to_date)
+
+# Выводим на печать массив значений баров в виде таблицы
+
+# rates_frame = pd.DataFrame(rates)
+# rates_frame['time'] = pd.to_datetime(rates_frame['time'], unit='s')
+# print(rates_frame)
+
+# rates_frame_m1 = pd.DataFrame(rates_m1)
+# rates_frame_m1['time'] = pd.to_datetime(rates_frame_m1['time'], unit='s')
+# print(rates_frame_m1)
+
+# ticks_frame = pd.DataFrame(get_ticks_values(symbol, from_date, to_date))
+# ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
+# print(ticks_frame)
+
+ind = 2
 
 
-# print("high = ", high)
-
-
-def fractal_up(high):
+def fractal_up(ind):
     """
 
-    :param high: Индекс 0-го бара, для упрощения перебора индексов внутри массива
-    :return: Возвращает:
-                [0] - Значение наивысшей точки фрактала
-                [1] - Условие обнаружения фрактала
-                [2] - Значение времени в секундах, равное времени начала формирования третьего бара после [0].
-                        С этого значения времени начинается перебор баров на ТФ М1.
-                [3] - Знаение времени в секундах, равное времени окончания периода выборки для ТФ М30.
-
+    :param ind: Значение индекса столбца HIGH
+    :return:
     """
     for _ in rates:
-        if rates[high + 2][2] > rates[high + 1][2] and \
-                rates[high + 2][2] > rates[high][2] and \
-                rates[high + 2][2] >= rates[high + 3][2] and \
-                rates[high + 2][2] >= rates[high + 4][2]:
-            print("Есть фрактал вверх. Точка фрактала = ", rates[high + 2][2])
-            # print(candle)
-            flag_by_fractal_up = True
-            # print("Flag Fractal BUY = ", flag_by_fractal_up)
-            return rates[high + 2][2], flag_by_fractal_up, rates[high + 5][0], \
-                   rates[last_index() + len(get_rates()) - 1][0]
+        flag_by_fractal_up = False
+        flag_to_open_pos_m1 = False
+        if not flag_by_fractal_up:
+            if rates['high'][ind] > rates['high'][ind - 1] and \
+                    rates['high'][ind] > rates['high'][ind - 2] and \
+                    rates['high'][ind] >= rates['high'][ind + 1] and \
+                    rates['high'][ind] >= rates['high'][ind + 2]:
+                print("Есть фрактал вверх. Точка фрактала = ", rates['high'][ind])
+                # print("Время фрактала", datetime.fromtimestamp(rates['time'][ind]))
+                print("Время фрактала", rates['time'][ind])
+                flag_by_fractal_up = True
+                time.sleep(5)
+        if flag_by_fractal_up:
+            if not flag_to_open_pos_m1:
+                for high in rates_m1:
+                    if high['high'] > rates['high'][ind]:
+                        print("Пересечение в точке - ", rates['high'][ind])
+                        print("Бар переченеия", high['high'])
+                        print("Время пересечения", high['time'])
+                        # ind_m1 += 1
+                        flag_to_open_pos_m1 = True
+                        time.sleep(5)
+            if flag_to_open_pos_m1:
+
         else:
-            print("Нет фрактала. Current High = ", rates[high + 2][2])
-            # print(candle)
-            # flag_by_fractal_up = False
-            # print("Flag Fractal BUY = ", flag_by_fractal_up)
-            # print("Нет фрактала", rates[n + 2][2])
-            high += 1
+            flag_by_fractal_up = True
+            print("Нет фрактала. Current High = ", rates['high'][ind])
+            ind += 1
 
 
+print(fractal_up(ind))
+
+"""
 # Присваивание переменным значений, пролучаемых в функции fractal_up
 buy_price = fractal_up(high)[0]
 flag_by_fractal_up = fractal_up(high)[1]
@@ -102,27 +148,27 @@ date_to_for_m1 = int(fractal_up(high)[3])  # datetime.strptime(str(buy_price[3])
 # print("Дата до - ", date_to_for_m1, datetime.fromtimestamp(date_to_for_m1-60*60*3))
 
 
-def get_price_m1():
+def get_value_bars_m1_timeframe():
     #
-    price_last_m1 = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, date_from_for_m1, date_to_for_m1)
+    rates_m1 = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, date_from_for_m1, date_to_for_m1)
     # ticks_last = mt5.copy_ticks_range(symbol, date_from_for_m1, date_to_for_m1, mt5.COPY_TICKS_INFO)
     # for ticks in ticks_last:
     # print("Tick Last Price = ", ticks[3])
-    return price_last_m1
+    return rates_m1
     # return ticks_last
 
 
-# print(len(get_price_m1()))
+# print(len(get_value_bars_m1_timeframe()))
 # index_rows = 0
 # index_columns = 2
-# last_high_m1 = get_price_m1()[index_rows][index_columns]
+# last_high_m1 = get_value_bars_m1_timeframe()[index_rows][index_columns]
 # print(last_high_m1)
 # print("ТИП last_high_m1", last_high_m1, type(last_high_m1))
 # print("ТИП BUY_PRICE", buy_price, type(buy_price))
-# print(get_price_m1())
+# print(get_value_bars_m1_timeframe())
 
 # Выводим на печать массив значений тиков в виде таблицы
-ticks_frame = pd.DataFrame(get_price_m1())
+ticks_frame = pd.DataFrame(get_value_bars_m1_timeframe())
 ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
 
 
@@ -130,47 +176,47 @@ ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
 # print(ticks_frame)
 
 
-# print(get_price_m1()[3])
+# print(get_value_bars_m1_timeframe()[3])
 
 
 def searches_bars_on_m1_before_activation():
     index_rows = 0
     index_columns = 2
-    last_high_m1 = get_price_m1()[index_rows][index_columns]
-    for _ in get_price_m1():
+    last_high_m1 = get_value_bars_m1_timeframe()[index_rows][index_columns]
+    for _ in get_value_bars_m1_timeframe():
         if flag_by_fractal_up:
             # print("Начинаем перебор тиков")
             if last_high_m1 >= buy_price:
                 flag_by_open_m1_buy = True
                 print("!!!Пробитие на минутах!!! Дальше перебираем тики с предыдущего минутного бара",
                       "\n", "Точка входа =", buy_price, "\n" "High бара =", last_high_m1)  # , "Значения = ", ticks)
-                # print(get_price_m1()[index_rows][0])
-                return flag_by_open_m1_buy, get_price_m1()[index_rows - 1][0]
+                # print(get_value_bars_m1_timeframe()[index_rows][0])
+                return flag_by_open_m1_buy, get_value_bars_m1_timeframe()[index_rows][0], get_value_bars_m1_timeframe()[index_rows + 1][0]
             else:
-                print("Следующий бар.", "Бар №", index_rows, " High =", last_high_m1, "Точка входа = ", buy_price)
+                # print("Следующий бар.", "Бар №", index_rows, " High =", last_high_m1, "Точка входа = ", buy_price)
                 index_rows += 1
-                last_high_m1 = get_price_m1()[index_rows][index_columns]
+                last_high_m1 = get_value_bars_m1_timeframe()[index_rows][index_columns]
                 # print(index_rows, index_columns)
 
 
 searches_bars_on_m1_before_activation()
 
 flag_by_open_m1_by = searches_bars_on_m1_before_activation()[0]
-print(flag_by_open_m1_by)
+# print(flag_by_open_m1_by)
 date_from_for_ticks = int(searches_bars_on_m1_before_activation()[1])
+# print(date_from_for_ticks)
+date_to_for_ticks = int(searches_bars_on_m1_before_activation()[2])  # date_to_for_m1
+# print(date_to_for_ticks)
+# print("Проверка присваивания дат переменным")
+# print("Дата от - ", date_from_for_ticks, datetime.fromtimestamp(date_from_for_ticks - 60 * 60 * 3))
+# print("Дата до - ", date_to_for_ticks, datetime.fromtimestamp(date_to_for_ticks - 60 * 60 * 3))
+
+print(flag_by_open_by)
 print(date_from_for_ticks)
-date_to_for_ticks = date_to_for_m1
 print(date_to_for_ticks)
-print("Проверка присваивания дат переменным")
-print("Дата от - ", date_from_for_ticks, datetime.fromtimestamp(date_from_for_ticks - 60 * 60 * 3))
-print("Дата до - ", date_to_for_ticks, datetime.fromtimestamp(date_to_for_ticks - 60 * 60 * 3))
-
-"""print(flag_by_open_by)
-print(date_from_for_ticks)
-print(date_to_for_ticks)"""
 
 
-def get_price_ticks():
+def get_ticks_values():
     #
     # price_ticks_last = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, date_from_for_ticks, date_to_for_ticks)
     price_ticks_last = mt5.copy_ticks_range(symbol, date_from_for_ticks, date_to_for_ticks, mt5.COPY_TICKS_INFO)
@@ -180,25 +226,53 @@ def get_price_ticks():
     # return ticks_last
 
 
-ticks_frame = pd.DataFrame(get_price_ticks())
+ticks_frame = pd.DataFrame(get_ticks_values())
 ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
-print(ticks_frame)
+
+
+# print(ticks_frame)
 
 
 def ticks_ver_near_the_entry_point_up():
     index_rows_ticks = 0
     index_columns_ticks = 3
-    last_ticks = get_price_ticks()[index_rows_ticks][index_columns_ticks]
-    for _ in get_price_ticks():
+    last_ticks = get_ticks_values()[index_rows_ticks][index_columns_ticks]
+    tp: int = 15
+    sl: int = 60
+
+    for ticks in get_ticks_values():
+        flag_by_open_position = False
         if flag_by_open_m1_by:
             if last_ticks > buy_price:
                 flag_by_open_position = True
-                print("Позиция открыта", flag_by_open_position, last_ticks, index_rows_ticks)
-                return flag_by_open_position
+                tp = last_ticks + tp
+                sl = last_ticks - sl
+                print("Позиция открыта", flag_by_open_position, last_ticks, index_rows_ticks, tp, sl, ticks)
+                #  return last_ticks, flag_by_open_position
+            if flag_by_open_position:
+                index_rows_ticks += 1
+                last_ticks = get_ticks_values()[index_rows_ticks][index_columns_ticks]
+                if last_ticks >= tp:
+                    print("Позиция закрылась по Тейку")
+                elif last_ticks <= sl:
+                    print("Позиция закрылась по Стопу", index_rows_ticks)
+            #  else:
+            #  print("Иначе")
             else:
                 print("Следующий тик", last_ticks, index_rows_ticks)
-                index_rows_ticks +=1
-                last_ticks = get_price_ticks()[index_rows_ticks][index_columns_ticks]
+                index_rows_ticks += 1
+                last_ticks = get_ticks_values()[index_rows_ticks][index_columns_ticks]
 
 
-ticks_ver_near_the_entry_point_up()
+ticks_ver_near_the_entry_point_up()"""
+
+"""def finding_the_exit_point():
+    tp = 15
+    sl = 60
+    tp, sl = ticks_ver_near_the_entry_point_up()[0] + tp, ticks_ver_near_the_entry_point_up()[0] - sl
+    #  sl = ticks_ver_near_the_entry_point_up()[0] - sl
+    print("Уровень Тейк-Профит =", tp)
+    print("Уровень Стоп-Лосс =", sl)
+
+
+finding_the_exit_point()"""
