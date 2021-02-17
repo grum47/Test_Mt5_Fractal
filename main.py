@@ -89,7 +89,7 @@ rates_ticks = get_ticks_values(symbol, from_date, to_date)
 # print(ticks_frame)
 
 
-def fractal_up(ind=2, tp=15, sl=60, flag_by_fractal_up=0):
+def fractal_up(ind=2, tp=15, sl=60):
     """
     :param flag_by_fractal_up: GJ{EQ
     :param sl: Значение Стоп-лосс
@@ -97,7 +97,7 @@ def fractal_up(ind=2, tp=15, sl=60, flag_by_fractal_up=0):
     :param ind: Значение индекса столбца HIGH
     :return:
     """
-
+    flag_by_fractal_up = 0
     for _ in rates:
 
         if flag_by_fractal_up == 0:
@@ -116,7 +116,7 @@ def fractal_up(ind=2, tp=15, sl=60, flag_by_fractal_up=0):
                 print("Уровень БАЙ", rates['high'][ind])
                 # from_date_m1 = datetime.fromtimestamp(rates['time'][ind])
 
-                ind += 1
+                # ind += 1
 
             else:
                 ind += 1
@@ -192,17 +192,24 @@ def fractal_up(ind=2, tp=15, sl=60, flag_by_fractal_up=0):
                                 time.sleep(1)
                                 print("Профит", rates_ticks['last'][ind_ticks-1], ">", tp_buy)
                                 flag_by_fractal_up = 0
+                                # from_date = rates_ticks['time'][ind_ticks-1]
+                                continue
 
                             elif rates_ticks['last'][ind_ticks] < sl_buy:
 
                                 time.sleep(1)
                                 print("Убыток", rates_ticks['last'][ind_ticks-1], "<", sl_buy)
-                                ind_ticks +=1
+                                ind_ticks += 1
                                 flag_by_fractal_up = 0
+                                continue
 
                             else:
                                 ind_ticks += 1
-                                flag_by_fractal_up = 0
+                    continue
+
+    flag_by_fractal_up = 0
+
+
 
 
 print(fractal_up(ind=2))
