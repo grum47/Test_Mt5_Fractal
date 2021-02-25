@@ -13,10 +13,10 @@ if not mt5.initialize():
 symbol = "Si-3.21"
 frame = mt5.TIMEFRAME_M30
 timezone = pytz.timezone("Etc/UTC")
-from_date = datetime(2021, 1, 25, 10, tzinfo=timezone)
-print(from_date)
-to_date = datetime(2021, 1, 28, tzinfo=timezone)
-print(to_date)
+from_date = datetime(2020, 1, 25, 10, tzinfo=timezone)
+# print(from_date)
+to_date = datetime(2021, 2, 20, tzinfo=timezone)
+# print(to_date)
 tp = 15
 sl = 60
 pd.set_option('display.max_columns', 500)  # Количество столбцов
@@ -123,7 +123,7 @@ rates_ticks = get_ticks_values(symbol, from_date, to_date)
 #
 # print(fractal_up_detection(2))
 
-def fractal_up_search(ind=2, tp=15, sl=60):
+def fractal_up_search(ind=2, tp=150, sl=20):
     """
     :param sl: Значение Стоп-лосс
     :param tp: Значение Тейк-профит
@@ -133,12 +133,14 @@ def fractal_up_search(ind=2, tp=15, sl=60):
     flag_by_fractal_up_search = False
     # flag_move_orders = False
     # Начинаем перебор баров исторического периода
+
+    profit = 0
     for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
 
         if not flag_by_fractal_up_search:
 
             last_high_m30 = rates['high'][ind]
-            print("last_high_m30 = ", last_high_m30)
+            # print("last_high_m30 = ", last_high_m30)
             # Условие определения фрактала ВВЕРХ
             if last_high_m30 > rates['high'][ind - 1] and \
                     last_high_m30 > rates['high'][ind - 2] and \
@@ -146,15 +148,15 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                     last_high_m30 >= rates['high'][ind + 2]:
 
                 price_fractal_up_first = last_high_m30
-                print("price_fractal_up_first ================", price_fractal_up_first)
+                # print("price_fractal_up_first ================", price_fractal_up_first)
                 time_fractal_up_first = rates['time'][ind]
                 # print("time_fractal_up_first", time_fractal_up_first)
                 print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
                 # time.sleep(1)
                 # ind += 1
-                print("ind", ind)
+                # print("ind", ind)
                 ind_n = ind + 1
-                print("ind_n", ind_n)
+                # print("ind_n", ind_n)
                 flag_by_fractal_up_search = True
                 # from_date_next_fractal = time_fractal_up_first
 
@@ -163,7 +165,7 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                     if flag_by_fractal_up_search:
 
                         last_high_m30_next = rates['high'][ind_n]
-                        print("last_high_m30_next", last_high_m30_next)
+                        # print("last_high_m30_next", last_high_m30_next)
 
                         if last_high_m30_next > rates['high'][ind_n - 1] and \
                                 last_high_m30_next > rates['high'][ind_n - 2] and \
@@ -171,13 +173,15 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                                 last_high_m30_next >= rates['high'][ind_n + 2]:
 
                             print("======================= Новый фрактал =========================", last_high_m30_next)
-                            print(ind_n)
+                            # print('ind_n', ind_n)
                             ind_n += 1
                             ind = ind_n
+                            # print('ind', ind)
                             flag_by_next_fractal_up_search = True
                             # flag_by_fractal_up_search = False
                             price_fractal_up_first = last_high_m30_next
-                            print("price_fractal_up_first =============================", price_fractal_up_first)
+                            time_fractal_up_first = rates['time'][ind_n]
+                            # print("price_fractal_up_first =============================", price_fractal_up_first)
 
                             # for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
                             #
@@ -189,7 +193,7 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                             #     break
 
                         elif last_high_m30_next > price_fractal_up_first:
-                            print("пересечение уровня первого фрактала", last_high_m30_next)
+                            # print("------------------------------пересечение уровня фрактала------", last_high_m30_next)
                             ind_n += 1
                             # flag_by_fractal_up_search = False
 
@@ -198,7 +202,7 @@ def fractal_up_search(ind=2, tp=15, sl=60):
 
                             # Изменение периода выборки для таймфрейма М1 (начало выборки = моменту обнаружения фрактала)
                             # Приходится прибавить 3 30-минутные свечи. Пока не понятно почему.
-                            from_date_m1 = datetime.fromtimestamp(time_fractal_up_first + 60 * 30 * 3)
+                            from_date_m1 = datetime.fromtimestamp(time_fractal_up_first + 60 * 30 * 3*0)
 
                             # print(from_date_m1)
                             # print(datetime.timestamp(from_date_m1))
@@ -228,11 +232,12 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                                         flag_to_open_pos_m1 = True  # Отметка о том, что можно искать тиковый вход
                                         time_candle_m1 = rates_m1['time'][ind_m1]
                                         # Значения бара, который пересек линию price_fractal_by
-                                        print("М1 - Open -  ", rates_m1['open'][ind_m1])
-                                        print("М1 - High - ", rates_m1['high'][ind_m1])
-                                        print("М1 - Low - ", rates_m1['low'][ind_m1])
-                                        print("М1 - Close - ", rates_m1['close'][ind_m1])
-                                        print("Время открытия - ", time_candle_m1)
+                                        # print("М1 - Open -  ", rates_m1['open'][ind_m1])
+                                        # print("М1 - High - ", rates_m1['high'][ind_m1])
+                                        # print("М1 - Low - ", rates_m1['low'][ind_m1])
+                                        # print("М1 - Close - ", rates_m1['close'][ind_m1])
+                                        # print("Время открытия - ", time_candle_m1)
+                                        # print("ind_m1", ind_m1)
                                         # ind_m1 - индекс свечи, которая пробила уровень фрактала
                                         time.sleep(1)
                                         # from_date = datetime.fromtimestamp(rates_m1['time'][ind_m1])
@@ -263,27 +268,31 @@ def fractal_up_search(ind=2, tp=15, sl=60):
                                                 if last_tick > price_fractal_up_first:
 
                                                     last_price_to_ticks = rates_ticks['last'][ind_ticks]
-                                                    print("Тик - ", last_price_to_ticks)
+                                                    # print("Тик - ", last_price_to_ticks)
                                                     time.sleep(0)
 
                                                     if last_tick > tp_buy:
 
-                                                        time.sleep(1)
+                                                        time.sleep(0)
                                                         print("Профит", last_tick, ">", tp_buy)
                                                         # from_date = rates_ticks['time'][ind_ticks-1]
                                                         ind_ticks += 1
                                                         # Отметки о выходе в основной цикл
-                                                        flag_to_open_pos_ticks = True
                                                         ind = ind_n
+                                                        profit += 1
+                                                        print(profit)
+                                                        flag_to_open_pos_ticks = True
 
-                                                    elif rates_ticks['last'][ind_ticks] < sl_buy:
+                                                    elif last_tick < sl_buy:
 
-                                                        time.sleep(1)
+                                                        time.sleep(0)
                                                         print("Убыток", rates_ticks['last'][ind_ticks - 1], "<", sl_buy)
                                                         ind_ticks += 1
-                                                        # Отметка о выходе в основной цикл
+                                                        # Отметки о выходе в основной цикл
+                                                        ind = ind_n
+                                                        profit -= 1
+                                                        print(profit)
                                                         flag_to_open_pos_ticks = True
-                                                        # flag_by_fractal_up_search = False
 
                                                     else:
                                                         ind_ticks += 1
