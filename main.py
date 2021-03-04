@@ -11,14 +11,12 @@ if not mt5.initialize():
     quit()
 
 symbol = "Si-3.21"
-frame = mt5.TIMEFRAME_M30
+frame = mt5.TIMEFRAME_M15
 timezone = pytz.timezone("Etc/UTC")
-from_date = datetime(2020, 1, 25, 10, tzinfo=timezone)
+from_date = datetime(2020, 1, 1, 10, tzinfo=timezone)
 # print(from_date)
-to_date = datetime(2021, 2, 20, tzinfo=timezone)
+to_date = datetime(2020, 12, 1, tzinfo=timezone)
 # print(to_date)
-tp = 15
-sl = 60
 pd.set_option('display.max_columns', 500)  # Количество столбцов
 pd.set_option('display.max_rows', 1000)  # Количество строк
 pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа
@@ -123,7 +121,7 @@ rates_ticks = get_ticks_values(symbol, from_date, to_date)
 #
 # print(fractal_up_detection(2))
 
-def fractal_up_search(ind=2, tp=150, sl=20):
+def fractal_up_search(ind=2, tp=15, sl=200):
     """
     :param sl: Значение Стоп-лосс
     :param tp: Значение Тейк-профит
@@ -151,7 +149,7 @@ def fractal_up_search(ind=2, tp=150, sl=20):
                 # print("price_fractal_up_first ================", price_fractal_up_first)
                 time_fractal_up_first = rates['time'][ind]
                 # print("time_fractal_up_first", time_fractal_up_first)
-                print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
+                # print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
                 # time.sleep(1)
                 # ind += 1
                 # print("ind", ind)
@@ -172,7 +170,7 @@ def fractal_up_search(ind=2, tp=150, sl=20):
                                 last_high_m30_next >= rates['high'][ind_n + 1] and \
                                 last_high_m30_next >= rates['high'][ind_n + 2]:
 
-                            print("======================= Новый фрактал =========================", last_high_m30_next)
+                            # print("======================= Новый фрактал =========================", last_high_m30_next)
                             # print('ind_n', ind_n)
                             ind_n += 1
                             ind = ind_n
@@ -202,7 +200,7 @@ def fractal_up_search(ind=2, tp=150, sl=20):
 
                             # Изменение периода выборки для таймфрейма М1 (начало выборки = моменту обнаружения фрактала)
                             # Приходится прибавить 3 30-минутные свечи. Пока не понятно почему.
-                            from_date_m1 = datetime.fromtimestamp(time_fractal_up_first + 60 * 30 * 3*0)
+                            from_date_m1 = datetime.fromtimestamp(time_fractal_up_first + 60 * 30 * 3 * 0)
 
                             # print(from_date_m1)
                             # print(datetime.timestamp(from_date_m1))
@@ -252,11 +250,12 @@ def fractal_up_search(ind=2, tp=150, sl=20):
 
                                         ind_m1 += 1
                                         ind_ticks = 0
+                                        ind_ticks_next = 0
 
                                         tp_buy = price_fractal_up_first + tp
                                         sl_buy = price_fractal_up_first - sl
-                                        print("Тейк-Профит", tp_buy)
-                                        print("Стоп-лосс", sl_buy)
+                                        # print("Тейк-Профит", tp_buy)
+                                        # print("Стоп-лосс", sl_buy)
 
                                         for _ in rates_ticks:
                                             # ind_ticks - индекс тиковых значений
@@ -264,40 +263,49 @@ def fractal_up_search(ind=2, tp=150, sl=20):
                                             if not flag_to_open_pos_ticks:
 
                                                 last_tick = rates_ticks['last'][ind_ticks]
+                                                # ind_ticks_next = ind_ticks
 
                                                 if last_tick > price_fractal_up_first:
 
-                                                    last_price_to_ticks = rates_ticks['last'][ind_ticks]
-                                                    # print("Тик - ", last_price_to_ticks)
-                                                    time.sleep(0)
+                                                    # print("сработал BBBBBBBUUUUUUUYYYYYYY OOORRRRDDDEEEEEERRRRR")
 
-                                                    if last_tick > tp_buy:
+                                                    buy_flag = True
 
-                                                        time.sleep(0)
-                                                        print("Профит", last_tick, ">", tp_buy)
-                                                        # from_date = rates_ticks['time'][ind_ticks-1]
-                                                        ind_ticks += 1
-                                                        # Отметки о выходе в основной цикл
-                                                        ind = ind_n
-                                                        profit += 1
-                                                        print(profit)
-                                                        flag_to_open_pos_ticks = True
+                                                    if buy_flag:
 
-                                                    elif last_tick < sl_buy:
+                                                        last_tick_next = rates_ticks['last'][ind_ticks_next]
+                                                        # print(last_tick_next)
 
-                                                        time.sleep(0)
-                                                        print("Убыток", rates_ticks['last'][ind_ticks - 1], "<", sl_buy)
-                                                        ind_ticks += 1
-                                                        # Отметки о выходе в основной цикл
-                                                        ind = ind_n
-                                                        profit -= 1
-                                                        print(profit)
-                                                        flag_to_open_pos_ticks = True
+                                                        if last_tick_next > tp_buy:
 
-                                                    else:
-                                                        ind_ticks += 1
-                                                    flag_by_fractal_up_search = False
-                                                    # ind += 1
+                                                            # time.sleep(0)
+                                                            # print("Профит", last_tick_next, ">", tp_buy)
+                                                            # from_date = rates_ticks['time'][ind_ticks-1]
+                                                            ind_ticks_next += 1
+                                                            # Отметки о выходе в основной цикл
+                                                            ind = ind_n
+                                                            profit += tp
+                                                            print(profit)
+                                                            flag_to_open_pos_ticks = True
+                                                            flag_by_fractal_up_search = False
+                                                            continue
+
+                                                        elif last_tick_next < sl_buy:
+                                                            # time.sleep(0.1)
+                                                            # print("Убыток", last_tick, "<", sl_buy)
+                                                            ind_ticks_next += 1
+                                                            # Отметки о выходе в основной цикл
+                                                            ind = ind_n
+                                                            profit -= sl
+                                                            print(profit)
+                                                            flag_to_open_pos_ticks = True
+                                                            flag_by_fractal_up_search = False
+                                                            continue
+
+                                                        else:
+                                                            ind_ticks_next += 1
+                                                        flag_by_fractal_up_search = False
+                                                        # ind += 1
 
                                                 else:
                                                     ind_ticks += 1
