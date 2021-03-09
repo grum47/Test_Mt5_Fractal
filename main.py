@@ -121,7 +121,7 @@ rates_ticks = get_ticks_values(symbol, from_date, to_date)
 #
 # print(fractal_up_detection(2))
 
-def fractal_up_search(ind=2, tp=150, sl=50):
+def fractal_up_search(ind, tp, sl):
     """
     :param sl: Значение Стоп-лосс
     :param tp: Значение Тейк-профит
@@ -360,4 +360,4 @@ def fractal_up_search(ind=2, tp=150, sl=50):
             flag_by_fractal_up_search = False
 
 
-print(fractal_up_search(ind=2))
+print(fractal_up_search(2, 450, 150))
