@@ -134,6 +134,28 @@ def fractal_up_search(ind, tp, sl):
     profit = 0
     for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
 
+        now_time = '10:30'  # время выставления ордеров
+        sleep_from = int('10')  # Время начала работы (часы)
+        sleep_from_m = int('00')  # Время начала работы (минуты)
+        sleep_to = int('18')  # Время окончания работы (часы)
+        # sleep_to_m = 00 # Время окончания работы (минуты)
+
+        ti = time.strftime('%H:%M', time.localtime(rates['time'][ind] - 60 * 60 * 3))
+        print(f'Время = {ti}')
+
+        # h = int(ti.split(':')[0])
+        # m = int(ti.split(':')[1])
+        # # print(f'Time {h}:{m}')
+        #
+        # if sleep_from > h or h > sleep_to:
+        #     print(f'sleep_from = {sleep_from} h = {h} sleep_to = {sleep_to}')
+        #     continue
+        # if h == sleep_from and m < sleep_from_m:
+        #     continue
+        # if now_time:
+        #     if int(now_time.split(':')[0]) < h and int(now_time.split(':')[1]) < m:
+        #         continue
+
         if not flag_by_fractal_up_search:
 
             last_high_m30 = rates['high'][ind]
@@ -148,7 +170,7 @@ def fractal_up_search(ind, tp, sl):
                 # print("price_fractal_up_first ================", price_fractal_up_first)
                 time_fractal_up_first = rates['time'][ind]
                 # print("time_fractal_up_first", time_fractal_up_first)
-                # print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
+                print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
                 # time.sleep(1)
                 # ind += 1
                 # print("ind", ind)
@@ -169,7 +191,7 @@ def fractal_up_search(ind, tp, sl):
                                 last_high_m30_next >= rates['high'][ind + 1] and \
                                 last_high_m30_next >= rates['high'][ind + 2]:
 
-                            # print("======================= Новый фрактал =========================", last_high_m30_next)
+                            print("======================= Новый фрактал ====== переставление ", last_high_m30_next)
                             # print('ind', ind)
                             ind += 1
                             # print('ind', ind)
@@ -215,7 +237,7 @@ def fractal_up_search(ind, tp, sl):
                                         ind_clos += 1
                                         flag_close = False
 
-                            # print("------------------------------пересечение уровня фрактала------")
+                            print("------------------------------пересечение уровня фрактала------")
                             # ind += 1
                             time_fractal_up_first = rates['time'][ind_open]
 
@@ -232,7 +254,6 @@ def fractal_up_search(ind, tp, sl):
                             # print(to_date)
 
                             rates_m1 = get_value_bars_m1_timeframe(symbol, from_date_m1, to_date)
-
 
                             # print(rates_m1)
                             # rates_frame_m1 = pd.DataFrame(rates_m1)
@@ -279,8 +300,8 @@ def fractal_up_search(ind, tp, sl):
                                         ind_ticks = 0
                                         ind_ticks_next = 0
 
-                                        # print("Тейк-Профит", tp_buy)
-                                        # print("Стоп-лосс", sl_buy)
+                                        print("Тейк-Профит", tp_buy)
+                                        print("Стоп-лосс", sl_buy)
 
                                         for _ in rates_ticks:
                                             # ind_ticks - индекс тиковых значений
@@ -308,7 +329,7 @@ def fractal_up_search(ind, tp, sl):
                                                         if last_tick_next > tp_buy:
 
                                                             # time.sleep(0)
-                                                            # print("Профит", last_tick_next, ">", tp_buy)
+                                                            print("Профит", last_tick_next, ">", tp_buy)
                                                             # print(ind)
                                                             # from_date = rates_ticks['time'][ind_ticks-1]
                                                             ind_ticks_next += 1
@@ -318,7 +339,7 @@ def fractal_up_search(ind, tp, sl):
                                                             flag_to_open_pos_ticks = True
                                                             flag_by_fractal_up_search = False
                                                             print(datetime.fromtimestamp(
-                                                                rates_ticks['time'][ind_ticks_next]-60*60*3))
+                                                                rates_ticks['time'][ind_ticks_next] - 60 * 60 * 3))
                                                             # time.sleep(0)
                                                             continue
 
@@ -329,7 +350,7 @@ def fractal_up_search(ind, tp, sl):
 
                                                         elif last_tick_next < sl_buy:
                                                             # time.sleep(0.1)
-                                                            # print("Убыток", last_tick_next, "<", sl_buy)
+                                                            print("Убыток", last_tick_next, "<", sl_buy)
                                                             ind_ticks_next += 1
                                                             # Отметки о выходе в основной цикл
                                                             profit -= sl
@@ -337,16 +358,13 @@ def fractal_up_search(ind, tp, sl):
                                                             flag_to_open_pos_ticks = True
                                                             flag_by_fractal_up_search = False
                                                             print(datetime.fromtimestamp(
-                                                                rates_ticks['time'][ind_ticks_next]-60*60*3))
+                                                                rates_ticks['time'][ind_ticks_next] - 60 * 60 * 3))
                                                             # time.sleep(5)
                                                             continue
-
-
 
                                                         else:
                                                             ind_ticks_next += 1
                                                         flag_by_fractal_up_search = False
-
                                                 else:
                                                     ind_ticks += 1
                                     else:
