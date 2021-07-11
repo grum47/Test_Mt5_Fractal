@@ -10,8 +10,10 @@ if not mt5.initialize():
     print("Инициализация не прошла. Ошибка - ", mt5.last_error())
     quit()
 
-symbol = "Si-3.21"
+symbol_name = "Si-3.21"
+print(symbol_name)
 frame = mt5.TIMEFRAME_M30
+print(frame)
 timezone = pytz.timezone("Etc/UTC")
 from_date = datetime(2021, 1, 25, 10, tzinfo=timezone)
 print(from_date)
@@ -22,48 +24,48 @@ pd.set_option('display.max_rows', 1000)  # Количество строк
 pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа
 
 
-def get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
+def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
     """
 
     :return: Возвращает значения баров основного таймфрейма (М30) за период от from_date до to_date
 
     """
 
-    rates = mt5.copy_rates_range(symbol, frame, from_date, to_date)
+    rates = mt5.copy_rates_range(symbol_name, frame, from_date, to_date)
     return rates
 
 
-# def get_one_bars_main_timeframe(symbol, frame, from_date, to_date):
+# def get_one_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 #     """
 #
 #     :return: Возвращает значения баров основного таймфрейма (М30) за период от from_date до to_date
 #
 #     """
 #
-#     rates = mt5.copy_rates_from(symbol, frame, from_date, 1)
+#     rates = mt5.copy_rates_from(symbol_name, frame, from_date, 1)
 #     return rates[0][2]
 
-def get_value_bars_m1_timeframe(symbol, from_date, to_date):
+def get_value_bars_m1_timeframe(symbol_name, from_date, to_date):
     """
 
-    :param symbol: Используемый инструмент
+    :param symbol_name: Используемый инструмент
     :param from_date: Дата начала периода
     :param to_date: Дата окончания периода
     :return: Возвращает массив значений свечей по ТФ М1
     """
-    rates_m1 = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_M1, from_date, to_date)
+    rates_m1 = mt5.copy_rates_range(symbol_name, mt5.TIMEFRAME_M1, from_date, to_date)
     return rates_m1
 
 
-def get_ticks_values(symbol, from_date, to_date):
+def get_ticks_values(symbol_name, from_date, to_date):
     """
 
-    :param symbol:
+    :param symbol_name:
     :param from_date:
     :param to_date:
     :return:
     """
-    rates_ticks = mt5.copy_ticks_range(symbol, from_date, to_date, mt5.COPY_TICKS_INFO)
+    rates_ticks = mt5.copy_ticks_range(symbol_name, from_date, to_date, mt5.COPY_TICKS_INFO)
     return rates_ticks
 
 
@@ -73,16 +75,16 @@ def get_ticks_values(symbol, from_date, to_date):
 #     :return: Возвращает индекс 0-го бара с начала массива
 #
 #     """
-#     return len(get_value_bars_main_timeframe(symbol, frame, from_date, to_date)) - len(
-#         get_value_bars_main_timeframe(symbol, frame, from_date, to_date))
+#     return len(get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)) - len(
+#         get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date))
 
 
 # Переназначаем переменные для упрощения написания дальнейших функций
 
-# candle_m30 = get_one_bars_main_timeframe(symbol, frame, from_date, to_date)
-rates = get_value_bars_main_timeframe(symbol, frame, from_date, to_date)
-rates_m1 = get_value_bars_m1_timeframe(symbol, from_date, to_date)
-rates_ticks = get_ticks_values(symbol, from_date, to_date)
+# candle_m30 = get_one_bars_main_timeframe(symbol_name, frame, from_date, to_date)
+rates = get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
+rates_m1 = get_value_bars_m1_timeframe(symbol_name, from_date, to_date)
+rates_ticks = get_ticks_values(symbol_name, from_date, to_date)
 
 
 # Выводим на печать массив значений баров в виде таблицы
@@ -97,7 +99,7 @@ rates_ticks = get_ticks_values(symbol, from_date, to_date)
 # rates_frame_m1['time'] = pd.to_datetime(rates_frame_m1['time'], unit='s')
 # print(rates_frame_m1)
 
-# ticks_frame = pd.DataFrame(get_ticks_values(symbol, from_date, to_date))
+# ticks_frame = pd.DataFrame(get_ticks_values(symbol_name, from_date, to_date))
 # ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
 # print(ticks_frame)
 
@@ -130,9 +132,11 @@ def fractal_up_search(ind, tp, sl):
     """
     flag_by_fractal_up_search = False
     # Начинаем перебор баров исторического периода
+    print(f'Тейк-профит = {tp}')
+    print(f'Стоп-лосс = {sl}')
 
     profit = 0
-    for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
+    for _ in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 
         now_time = '10:30'  # время выставления ордеров
         sleep_from = int('10')  # Время начала работы (часы)
@@ -170,7 +174,7 @@ def fractal_up_search(ind, tp, sl):
                 # print("price_fractal_up_first ================", price_fractal_up_first)
                 time_fractal_up_first = rates['time'][ind]
                 # print("time_fractal_up_first", time_fractal_up_first)
-                print("----------------------- Первый фрактал --------------------------------", price_fractal_up_first)
+                print("----- Первый фрактал -----", price_fractal_up_first)
                 # time.sleep(1)
                 # ind += 1
                 # print("ind", ind)
@@ -179,7 +183,7 @@ def fractal_up_search(ind, tp, sl):
                 flag_by_fractal_up_search = True
                 # from_date_next_fractal = time_fractal_up_first
 
-                for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
+                for _ in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 
                     if flag_by_fractal_up_search:
 
@@ -191,7 +195,7 @@ def fractal_up_search(ind, tp, sl):
                                 last_high_m30_next >= rates['high'][ind + 1] and \
                                 last_high_m30_next >= rates['high'][ind + 2]:
 
-                            print("======================= Новый фрактал ====== переставление ", last_high_m30_next)
+                            print("===== Новый фрактал ====== переставление ", last_high_m30_next)
                             # print('ind', ind)
                             ind += 1
                             # print('ind', ind)
@@ -209,14 +213,14 @@ def fractal_up_search(ind, tp, sl):
                             ind_clos = ind
 
                             # Значения бара, который пересек линию price_fractal_up_first
-                            # print("Бар открытия:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+                            # print("Бар открытия:::::::::::::::::::::::::::::::")
                             # print("М15 - Open -  ", rates['open'][ind])
                             # print("М15 - High - ", rates['high'][ind])
                             # print("М15 - Low - ", rates['low'][ind])
                             # print("М15 - Close - ", rates['close'][ind])
                             # print("Время открытия - ", rates['time'][ind])
 
-                            for _ in get_value_bars_main_timeframe(symbol, frame, from_date, to_date):
+                            for _ in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 
                                 if not flag_close:
 
@@ -237,7 +241,7 @@ def fractal_up_search(ind, tp, sl):
                                         ind_clos += 1
                                         flag_close = False
 
-                            print("------------------------------пересечение уровня фрактала------")
+                            print("----- пересечение уровня фрактала -----")
                             # ind += 1
                             time_fractal_up_first = rates['time'][ind_open]
 
@@ -246,14 +250,15 @@ def fractal_up_search(ind, tp, sl):
                             # Флаг условия перебора свечей на таймфрейме М1
                             flag_to_open_pos_m1 = False
 
-                            # Изменение периода выборки для таймфрейма М1 (начало выборки = моменту обнаружения фрактала)
+                            # Изменение периода выборки для таймфрейма М1
+                            # (начало выборки = моменту обнаружения фрактала)
                             # Приходится прибавить 3 30-минутные свечи. Пока не понятно почему.
                             from_date_m1 = datetime.fromtimestamp(time_fractal_up_first)
                             # print(from_date_m1)
                             # print(datetime.timestamp(from_date_m1))
                             # print(to_date)
 
-                            rates_m1 = get_value_bars_m1_timeframe(symbol, from_date_m1, to_date)
+                            rates_m1 = get_value_bars_m1_timeframe(symbol_name, from_date_m1, to_date)
 
                             # print(rates_m1)
                             # rates_frame_m1 = pd.DataFrame(rates_m1)
@@ -290,7 +295,7 @@ def fractal_up_search(ind, tp, sl):
                                         flag_to_open_pos_ticks = False
                                         from_date_ticks = datetime.fromtimestamp(time_candle_m1)
 
-                                        rates_ticks = get_ticks_values(symbol, from_date_ticks, to_date)
+                                        rates_ticks = get_ticks_values(symbol_name, from_date_ticks, to_date)
 
                                         # ticks_frame = pd.DataFrame(rates_ticks)
                                         # ticks_frame['time'] = pd.to_datetime(ticks_frame['time'], unit='s')
@@ -318,7 +323,8 @@ def fractal_up_search(ind, tp, sl):
                                                     if buy_flag:
 
                                                         last_tick_next = rates_ticks['last'][ind_ticks_next]
-                                                        # time_tick_next = datetime.fromtimestamp(rates_ticks['time'][ind_ticks_next])
+                                                        # time_tick_next = datetime.fromtimestamp(
+                                                        # rates_ticks['time'][ind_ticks_next])
 
                                                         # print('Тик', last_tick_next, 'Время', time_tick_next)
                                                         # time.sleep(0)
