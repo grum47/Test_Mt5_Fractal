@@ -5,78 +5,128 @@ import MetaTrader5 as mt5
 import pandas as pd
 import pytz
 
+# Настройки тайм-зоны и датафреймов для показа (потом можно будет удалить)
+timezone = pytz.timezone("Etc/UTC")
+pd.set_option('display.max_columns', 500)  # Количество столбцов
+pd.set_option('display.max_rows', 1000)  # Количество строк
+pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа
+
+# Устанавливаем соединение с терминалом MetaTrader 5
+# Вызов без параметров. Терминал для подключения будет найден автоматически. Предварительно надо подключитсья к счету.
+# Если несколько счетов, то надо переписать:
+"""mt5.initialize(
+   path,                     // путь к EXE-файлу терминала MetaTrader 5
+   login=LOGIN,              // номер счета
+   password="PASSWORD",      // пароль
+   server="SERVER",          // имя сервера, как оно задано в терминале
+   timeout=TIMEOUT,          // таймаут
+   portable=False            // режим portable
+   )"""
 mt5.initialize()
 if not mt5.initialize():
     print("Инициализация не прошла. Ошибка - ", mt5.last_error())
     quit()
 
-symbol_name = "Si-3.21"
-print(symbol_name)
+# Задаем параметры для тестирования (потом сделать интерфейс):
+# Финансовый инструмент
+symbol_name = "Si-9.21"
+# Размер Тейк-профит
+tp = 450
+# Размер Стоп-лосс
+sl = 150
+
+# Рабочий таймфрейм
 frame = mt5.TIMEFRAME_M30
-print(frame)
-timezone = pytz.timezone("Etc/UTC")
-from_date = datetime(2021, 1, 25, 10, tzinfo=timezone)
-print(from_date)
-to_date = datetime(2021, 3, 8, tzinfo=timezone)
-print(to_date)
-pd.set_option('display.max_columns', 500)  # Количество столбцов
-pd.set_option('display.max_rows', 1000)  # Количество строк
-pd.set_option('display.width', 1500)  # Макс. ширина таблицы для показа
+# Таймфрейм для работы по минутам (не меняем)
+frame_m1 = mt5.TIMEFRAME_M1
+# Тип запрашиваемых тиков (не меняем)
+flags = mt5.COPY_TICKS_INFO
+
+# Размер фрактала (5, 7, 9, 11 и т.д. свечей)
+...
+
+# Диапазон тестирования
+# дата, с которой запрашиваются бары (год, месяц, день, час) возможно потом добавим минуты
+from_date = datetime(2021, 5, 1, 10, tzinfo=timezone)
+# дата, по которую запрашиваются бары (год, месяц, день) возможно потом добавим часы и минуты
+to_date = datetime(2021, 7, 12, tzinfo=timezone)
+
+# Печатаем информацию (после того, как сделаем интерфейс можно удалить)
+print(f'Торгуемый инструмент - {symbol_name}')
+print(f'Рабочий таймфрейм - {frame}')
+print(f'От - {from_date}')
+print(f'До - {to_date}')
 
 
+# Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 по рабочему таймфрейму
 def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
     """
-
-    :return: Возвращает значения баров основного таймфрейма (М30) за период от from_date до to_date
-
+    :param symbol_name: Имя финансового инструмента
+    :param frame: Таймфрейм, для которого запрашиваются бары
+    :param from_date: Дата, начиная с которой запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших с 1970.01.01. Отдаются бары со временем открытия >= date_from
+    :param to_date: Дата, по которую запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших  с 1970.01.01. Отдаются бары со временем открытия <= date_to
+    :return: Возвращает бары в виде массива numpy с именованными столбцами time, open, high, low, close, tick_volume,
+            spread и real_volume. В случае ошибки возвращает None
     """
 
-    rates = mt5.copy_rates_range(symbol_name, frame, from_date, to_date)
-    return rates
+    bar_values = mt5.copy_rates_range(symbol_name, frame, from_date, to_date)
+    return bar_values
 
 
-# def get_one_bars_main_timeframe(symbol_name, frame, from_date, to_date):
-#     """
-#
-#     :return: Возвращает значения баров основного таймфрейма (М30) за период от from_date до to_date
-#
-#     """
-#
-#     rates = mt5.copy_rates_from(symbol_name, frame, from_date, 1)
-#     return rates[0][2]
-
-def get_value_bars_m1_timeframe(symbol_name, from_date, to_date):
+# Функция Получения баров из терминала MetaTrader 5, начиная с указанной даты.
+# НЕ ИСПОЛЬЗУЕТСЯ
+def get_one_bars_main_timeframe(symbol_name, frame, from_date, count):
+    """
+    :param symbol_name: Имя финансового инструмента
+    :param frame: Таймфрейм, для которого запрашиваются бары
+    :param from_date: Дата открытия первого бара из запрашиваемой выборки.
+                        Задается объектом datetime или в виде количества секунд, прошедших с 1970.01.01
+    :param count: Количество баров, которое необходимо получить
+    :return: Возвращает бары в виде массива numpy с именованными столбцами time, open, high, low, close, tick_volume,
+            spread и real_volume. В случае ошибки возвращает None
     """
 
-    :param symbol_name: Используемый инструмент
-    :param from_date: Дата начала периода
-    :param to_date: Дата окончания периода
-    :return: Возвращает массив значений свечей по ТФ М1
+    bar_values = mt5.copy_rates_from(symbol_name, frame, from_date, count)
+    return bar_values[0][2]
+
+
+# Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 таймфрейму М1
+def get_value_bars_m1_timeframe(symbol_name, frame_m1, from_date, to_date):
     """
-    rates_m1 = mt5.copy_rates_range(symbol_name, mt5.TIMEFRAME_M1, from_date, to_date)
-    return rates_m1
-
-
-def get_ticks_values(symbol_name, from_date, to_date):
+    :param symbol_name: Имя финансового инструмента
+    :param frame_m1: Таймфрейм, для которого запрашиваются бары (в данной функции только М1 - это необходимо для
+                    большей точности в тестировании)
+    :param from_date: Дата, начиная с которой запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших с 1970.01.01. Отдаются бары со временем открытия >= date_from
+    :param to_date: Дата, по которую запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших  с 1970.01.01. Отдаются бары со временем открытия <= date_to
+    :return: Возвращает бары в виде массива numpy с именованными столбцами time, open, high, low, close, tick_volume,
+            spread и real_volume. В случае ошибки возвращает None
     """
 
-    :param symbol_name:
-    :param from_date:
-    :param to_date:
-    :return:
+    bar_values_m1 = mt5.copy_rates_range(symbol_name, frame_m1, from_date, to_date)
+    return bar_values_m1
+
+
+# Функция получения тиков в указанном диапазоне дат из терминала MetaTrader 5
+def get_ticks_values(symbol_name, from_date, to_date, flags):
     """
-    rates_ticks = mt5.copy_ticks_range(symbol_name, from_date, to_date, mt5.COPY_TICKS_INFO)
-    return rates_ticks
+    :param symbol_name: Имя финансового инструмента
+    :param from_date: Дата, начиная с которой запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших с 1970.01.01
+    :param to_date: Дата, по которую запрашиваются бары. Задается объектом datetime или в виде количества
+            секунд, прошедших  с 1970.01.01
+    :param flags: Флаг, определяющий тип запрашиваемых тиков.
+                COPY_TICKS_INFO – тики, вызванные изменениями Bid и/или Ask,
+                COPY_TICKS_TRADE – тики с изменения Last и Volume,
+                COPY_TICKS_ALL – все тики
+    :return: Возвращает значения тиков за период от from_date до to_date
+    """
 
-
-# def last_index():
-#     """
-#
-#     :return: Возвращает индекс 0-го бара с начала массива
-#
-#     """
-#     return len(get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)) - len(
-#         get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date))
+    ticks_values = mt5.copy_ticks_range(symbol_name, from_date, to_date, flags)
+    return ticks_values
 
 
 # Переназначаем переменные для упрощения написания дальнейших функций
@@ -104,25 +154,6 @@ rates_ticks = get_ticks_values(symbol_name, from_date, to_date)
 # print(ticks_frame)
 
 
-# def fractal_up_detection(ind):
-#     flag_by_fractal_up_search = False
-#     while not flag_by_fractal_up_search:
-#         last_high_m30 = rates['high'][ind]
-#         # print("last_high_m30 = ", last_high_m30)
-#         if last_high_m30 > rates['high'][ind - 1] and \
-#                 last_high_m30 > rates['high'][ind - 2] and \
-#                 last_high_m30 >= rates['high'][ind + 1] and \
-#                 last_high_m30 >= rates['high'][ind + 2]:
-#             ind += 1
-#             print(last_high_m30)
-#             return last_high_m30
-#         else:
-#             ind += 1
-#             flag_by_fractal_up_search = True
-#             return flag_by_fractal_up_search
-#
-# print(fractal_up_detection(2))
-
 def fractal_up_search(ind, tp, sl):
     """
     :param sl: Значение Стоп-лосс
@@ -138,27 +169,33 @@ def fractal_up_search(ind, tp, sl):
     profit = 0
     for _ in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 
-        now_time = '10:30'  # время выставления ордеров
-        sleep_from = int('10')  # Время начала работы (часы)
-        sleep_from_m = int('00')  # Время начала работы (минуты)
-        sleep_to = int('18')  # Время окончания работы (часы)
-        # sleep_to_m = 00 # Время окончания работы (минуты)
+        # now_time = '10:30'  # время выставления ордеров
+        # print(f'now_time - {now_time}')
+        # sleep_from = int('10')  # Время начала работы (часы)
+        # print(f'sleep_from - {sleep_from}')
+        # sleep_from_m = int('00')  # Время начала работы (минуты)
+        # print(f'sleep_from_m - {sleep_from_m}')
+        # sleep_to = int('18')  # Время окончания работы (часы)
+        # print(f'sleep_to - {sleep_to}')
+        # sleep_to_m = int('00')  # Время окончания работы (минуты)
+        # print(f'sleep_to_m - {sleep_to_m}')
 
         ti = time.strftime('%H:%M', time.localtime(rates['time'][ind] - 60 * 60 * 3))
         print(f'Время = {ti}')
 
-        # h = int(ti.split(':')[0])
-        # m = int(ti.split(':')[1])
-        # # print(f'Time {h}:{m}')
-        #
-        # if sleep_from > h or h > sleep_to:
-        #     print(f'sleep_from = {sleep_from} h = {h} sleep_to = {sleep_to}')
-        #     continue
-        # if h == sleep_from and m < sleep_from_m:
-        #     continue
-        # if now_time:
-        #     if int(now_time.split(':')[0]) < h and int(now_time.split(':')[1]) < m:
-        #         continue
+        h = int(ti.split(':')[0])
+        m = int(ti.split(':')[1])
+        # print(f'Time {h}:{m}')
+
+        # while True:
+        #     ti = time.strftime('%H:%M', time.localtime(time.time()))
+        #     h = int(ti.split(':')[0])
+        #     m = int(ti.split(':')[1])
+        #     # if int(now_time.split(':')[0])==9 and int(now_time.split(':')[1])>44:
+        #     if h == 9 and m > 44:
+        #         flag_for_current_candle = True
+        #     if ti == now_time:
+        #         time.sleep(1)
 
         if not flag_by_fractal_up_search:
 
@@ -384,4 +421,4 @@ def fractal_up_search(ind, tp, sl):
             flag_by_fractal_up_search = False
 
 
-print(fractal_up_search(2, 450, 150))
+print(fractal_up_search(2, tp, sl))
