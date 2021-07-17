@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 import functools
 
@@ -30,14 +31,14 @@ if not mt5.initialize():
 
 """Задаем параметры для тестирования (потом сделать интерфейс)"""
 symbol_name = "Si-9.21"                                 # финансовый инструмент
-from_date = datetime(2021, 5, 10, 17, tzinfo=timezone)  # дата, с которой запрашиваются бары (год, месяц, день, час)
+from_date = datetime(2021, 5, 10, 7, tzinfo=timezone)  # дата, с которой запрашиваются бары (год, месяц, день, час)
 to_date = datetime(2021, 7, 10, tzinfo=timezone)        # дата, по которую запрашиваются бары (год, месяц, день)
 tp = 450                                                # размер Тейк-профит
 sl = 150                                                # размер Стоп-лосс
 frame = mt5.TIMEFRAME_M30                               # рабочий таймфрейм
 frame_m1 = mt5.TIMEFRAME_M1                             # таймфрейм для работы по минутам (не меняем)
 flags = mt5.COPY_TICKS_INFO                             # тип запрашиваемых тиков (не меняем)
-...                                                     # Размер фрактала (5, 7, 9, 11 и т.д. свечей)
+fractal_size = 5                                        # Размер фрактала (5, 7, 9, 11 и т.д. свечей)
 
 """Печатаем информацию (после того, как сделаем интерфейс можно удалить)"""
 print(f'Торгуемый инструмент - {symbol_name}')
@@ -61,8 +62,7 @@ def runtime_calculation(func):
         return res
     return wrapper
 
-
-@runtime_calculation
+@functools.lru_cache(maxsize=None)
 def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
     """
     Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 по рабочему таймфрейму
@@ -80,7 +80,6 @@ def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
     if bar_values is None:
         print(mt5.last_error())
     else:
-        print(bar_values)
         return bar_values
 
 
@@ -106,7 +105,6 @@ def get_one_bars_main_timeframe(symbol_name, frame, from_date, count):
 
 
 @functools.lru_cache(maxsize=None)
-@runtime_calculation
 def get_value_bars_m1_timeframe(symbol_name, frame_m1, from_date, to_date):
     """
     Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 таймфрейм М1
@@ -129,7 +127,6 @@ def get_value_bars_m1_timeframe(symbol_name, frame_m1, from_date, to_date):
 
 
 @functools.lru_cache(maxsize=None)
-@runtime_calculation
 def get_ticks_values(symbol_name, from_date, to_date, flags):
     """
     Функция получения тиков в указанном диапазоне дат из терминала MetaTrader 5
@@ -151,28 +148,50 @@ def get_ticks_values(symbol_name, from_date, to_date, flags):
     else:
         return ticks_values
 
-
-def fractal_detection_up(symbol_name, frame, from_date, to_date):
+@runtime_calculation
+def fractal_detection_up(ind, tp, sl):
     """
     Функция определения фрактала на рабочем таймфрейме (5 свечей)
-    :param symbol_name: Имя финансового инструмента
-    :param frame:
-    :param from_date:
-    :param to_date:
+    :param
+    :param
+    :param
     :return:
     """
+    list_of_bars = []
     flag_by_fractal_detection_up = False                                   # Флаг определения бара как вершины фрактала
     for bars in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):  # Перебираем бары на рабочем ТФ
         if not flag_by_fractal_detection_up:
-            ...
+            list_of_bars = (get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
+                            ['high'][ind:ind + fractal_size])
+
+            if all(list_of_bars[2] > i for i in list_of_bars[:2]) and \
+                    all(list_of_bars[2] > j for j in list_of_bars[3:]):
+                ind += 1
+                print(f'ХАЙ БАРА = {list_of_bars[2]} > {list_of_bars}')
+            else:
+                ind += 1
+
 
 # Функция тестирования
 def tester():
     ...
 
 
-# Область вызова функций
+# Область прокерки функций
 
-#print(pd.DataFrame(get_ticks_values(symbol_name, from_date, to_date, flags)))
-#print(pd.DataFrame(mt5.copy_ticks_range(symbol_name, from_date, to_date, flags)))
-#get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
+fractal_detection_up(0,tp,sl)
+
+
+"""df = pd.DataFrame(get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date))
+hdf = df.head(10)
+print(hdf['high'][2:5])"""
+"""list_of_bars = (get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)['high'][0:0+5])
+print(list_of_bars)
+print(all(80000 > i for i in list_of_bars))"""
+
+# print(f'Текущий бар = {list_of_bars[2]}')
+# print(f'Список баров = {list_of_bars}')
+# print(f'Первые 2 бара списка = {list_of_bars[:2:]}')
+# print(f'Последние 2 бара списка = {list_of_bars[3:]}')
+# # print(f'list_of_bars[2] = {list_of_bars[2]} >< all list_of_bars = {list_of_bars}')
+# time.sleep(1)
