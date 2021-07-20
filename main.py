@@ -84,7 +84,7 @@ def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 
 def get_one_bars_main_timeframe(symbol_name, frame, from_date, count):
     """
-    Функция Получения баров из терминала MetaTrader 5, начиная с указанной даты.
+    Функция получения баров из терминала MetaTrader 5, начиная с указанной даты.
     НЕ ИСПОЛЬЗУЕТСЯ
     :param symbol_name: Имя финансового инструмента
     :param frame: Таймфрейм, для которого запрашиваются бары
@@ -153,7 +153,7 @@ def fractal_detection_up(ind: int) -> tuple:
     """
     Функция определения фрактала на рабочем таймфрейме (5 свечей)
     :param ind: Номер индекса, с которого начинается отсчет баров (0 - с самого первого бара)
-    :return: Возвращает значение вершины фрактального бара и времени его формирования
+    :return: Возвращает значение вершины фрактального бара и времени его формирования на М30
     """
     flag_by_fractal_detection_up = False                                   # Флаг определения бара как вершины фрактала
     for bars in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):  # Перебираем бары на рабочем ТФ
@@ -164,7 +164,7 @@ def fractal_detection_up(ind: int) -> tuple:
             time_of_bars = (get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
                             ['time'][ind:ind + fractal_size])   # Добавляем в список значения времени
                                                                 # от начального до необходимого бара
-            # print(list_of_bars)                                 # печать вершин баров (удалить)
+            # print(list_of_bars)                               # печать вершин баров (удалить)
 
             if all(list_of_bars[2] > i for i in list_of_bars[:2]) and \
                     all(list_of_bars[2] > j for j in list_of_bars[3:]):  # сравниваем вершину среднего бара с остальными
@@ -180,17 +180,40 @@ def fractal_detection_up(ind: int) -> tuple:
 
 @runtime_calculation
 def fractal_line_crossing(time_of_bars, line_of_bars):
+    """
+    Функция определения момента времени пересечения ценой линии фрактала
+    :param time_of_bars: Время начала формирования бара на М30 за полным фракталом
+    :param line_of_bars: Линия хая фрактального бара (условный ордер на покупку BUY stop)
+    :return: Время начала формирования бара М30, на котором будет "вход в позицию"
+    """
     flag_by_fractal_line_crossing = False
     for bars in get_value_bars_main_timeframe(symbol_name, frame, time_of_bars, to_date):
         if not flag_by_fractal_line_crossing:
             if bars['high'] > line_of_bars:
+                # print(f'Пересечение линии фрактала - {line_of_bars}, время формирования бара - {bars["time"]}')
+                flag_by_fractal_line_crossing = True
+                return bars['time']
+            else:
+                ...
+
+
+@runtime_calculation
+def fractal_line_crossing_m1(time_of_bars_m1, line_of_bars):
+    """
+    Функция определения момента времени пересечения ценой линии фрактала
+    :param time_of_bars: Время начала формирования бара на М30 за полным фракталом
+    :param line_of_bars: Линия хая фрактального бара (условный ордер на покупку BUY stop)
+    :return: Время начала формирования бара М30, на котором будет "вход в позицию"
+    """
+    flag_by_fractal_line_crossing_m1 = False
+    for bars in get_value_bars_m1_timeframe(symbol_name, frame_m1, time_of_bars_m1, to_date):
+        if not flag_by_fractal_line_crossing_m1:
+            if bars['high'] > line_of_bars:
                 print(f'Пересечение линии фрактала - {line_of_bars}, время формирования бара - {bars["time"]}')
                 flag_by_fractal_line_crossing = True
+                return bars['time']
             else:
-                print(bars['high'])
-
-
-
+                ...
 
 
 
@@ -200,9 +223,10 @@ def tester():
 
 
 # Область прокерки функций
-time_of_bars = datetime.fromtimestamp(fractal_detection_up(0)[0])
+time_of_bars = datetime.fromtimestamp(fractal_detection_up(0)[0]+60*30*3)  # пропускаем 3 М30 бара
 line_of_bars = fractal_detection_up(0)[1]
-fractal_line_crossing(time_of_bars, line_of_bars)
+time_of_bars_m1 = datetime.fromtimestamp(fractal_line_crossing(time_of_bars, line_of_bars))
+print(fractal_line_crossing_m1(time_of_bars_m1, line_of_bars))
 
 
 
