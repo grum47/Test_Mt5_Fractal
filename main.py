@@ -1,4 +1,3 @@
-import time
 from datetime import datetime
 import functools
 
@@ -31,7 +30,7 @@ if not mt5.initialize():
 
 """Задаем параметры для тестирования (потом сделать интерфейс)"""
 symbol_name = "Si-9.21"                                 # финансовый инструмент
-from_date = datetime(2021, 5, 10, 7, tzinfo=timezone)  # дата, с которой запрашиваются бары (год, месяц, день, час)
+from_date = datetime(2021, 5, 10, 7, tzinfo=timezone)   # дата, с которой запрашиваются бары (год, месяц, день, час)
 to_date = datetime(2021, 7, 10, tzinfo=timezone)        # дата, по которую запрашиваются бары (год, месяц, день)
 tp = 450                                                # размер Тейк-профит
 sl = 150                                                # размер Стоп-лосс
@@ -149,27 +148,50 @@ def get_ticks_values(symbol_name, from_date, to_date, flags):
         return ticks_values
 
 @runtime_calculation
-def fractal_detection_up(ind, tp, sl):
+@functools.lru_cache(maxsize=None)
+def fractal_detection_up(ind: int) -> tuple:
     """
     Функция определения фрактала на рабочем таймфрейме (5 свечей)
-    :param
-    :param
-    :param
-    :return:
+    :param ind: Номер индекса, с которого начинается отсчет баров (0 - с самого первого бара)
+    :return: Возвращает значение вершины фрактального бара и времени его формирования
     """
-    list_of_bars = []
     flag_by_fractal_detection_up = False                                   # Флаг определения бара как вершины фрактала
     for bars in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):  # Перебираем бары на рабочем ТФ
         if not flag_by_fractal_detection_up:
             list_of_bars = (get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
-                            ['high'][ind:ind + fractal_size])
+                            ['high'][ind:ind + fractal_size])   # Добавляем в список значения вершин
+                                                                # от начального до необходимого бара
+            time_of_bars = (get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date)
+                            ['time'][ind:ind + fractal_size])   # Добавляем в список значения времени
+                                                                # от начального до необходимого бара
+            # print(list_of_bars)                                 # печать вершин баров (удалить)
 
             if all(list_of_bars[2] > i for i in list_of_bars[:2]) and \
-                    all(list_of_bars[2] > j for j in list_of_bars[3:]):
-                ind += 1
-                print(f'ХАЙ БАРА = {list_of_bars[2]} > {list_of_bars}')
+                    all(list_of_bars[2] > j for j in list_of_bars[3:]):  # сравниваем вершину среднего бара с остальными
+                ind += 1                                                 # переход на следующий бар
+                # print(f'High фрактального бара - {list_of_bars[2]}')
+                # print(f'Время фрактального бара - {time_of_bars[2]}')  # Возможно время не правильно считает (3 часа)
+                flag_by_fractal_detection_up = True         # Флаг активируется, фрактал найден, дальше поиск не ведем
+                return time_of_bars[2], list_of_bars[2]     # Значение вершины фрактального бара и
+                                                            # времени начала его формирования
             else:
-                ind += 1
+                ind += 1                                    # переход на следующий бар
+
+
+@runtime_calculation
+def fractal_line_crossing(time_of_bars, line_of_bars):
+    flag_by_fractal_line_crossing = False
+    for bars in get_value_bars_main_timeframe(symbol_name, frame, time_of_bars, to_date):
+        if not flag_by_fractal_line_crossing:
+            if bars['high'] > line_of_bars:
+                print(f'Пересечение линии фрактала - {line_of_bars}, время формирования бара - {bars["time"]}')
+                flag_by_fractal_line_crossing = True
+            else:
+                print(bars['high'])
+
+
+
+
 
 
 # Функция тестирования
@@ -178,8 +200,16 @@ def tester():
 
 
 # Область прокерки функций
+time_of_bars = datetime.fromtimestamp(fractal_detection_up(0)[0])
+line_of_bars = fractal_detection_up(0)[1]
+fractal_line_crossing(time_of_bars, line_of_bars)
 
-fractal_detection_up(0,tp,sl)
+
+
+
+
+
+
 
 
 """df = pd.DataFrame(get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date))
