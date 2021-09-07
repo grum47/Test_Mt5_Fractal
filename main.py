@@ -151,7 +151,7 @@ def get_ticks_values(symbol_name, from_date, to_date, flags):
 
 @runtime_calculation
 @functools.lru_cache(maxsize=None)
-def fractal_detection_up(ind: int) -> tuple:
+def fractal_detection_up(ind: int) -> list:
     """
     Функция определения фрактала на рабочем таймфрейме (5 свечей)
     :param ind: Номер индекса, с которого начинается отсчет баров (0 - с самого первого бара)
@@ -176,9 +176,10 @@ def fractal_detection_up(ind: int) -> tuple:
                 ind += 1
                 # print(f'High фрактального бара - {list_of_bars[2]}')
                 # print(f'Время фрактального бара - {time_of_bars[2]}')  # Возможно время не правильно считает (3 часа)
-                flag_by_fractal_detection_up = True         # Флаг активируется, фрактал найден, дальше поиск не ведем
+                # flag_by_fractal_detection_up = True         # Флаг активируется, фрактал найден, дальше поиск не ведем
                 # Значение времени начала формирования фрактального бара и значение HIGH
-                return time_of_bars[2], list_of_bars[2]
+                return [time_of_bars[2], list_of_bars[2]]  # возвращает 1 фрактал
+                # print(time_of_bars[2], list_of_bars[2])  # для получения списка всех фракталов
             else:
                 ind += 1  # переход на следующий бар
 
@@ -250,30 +251,32 @@ def fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars):
 # Функции тестирования
 def price_movement_over_time(time_of_bars_ticks_starting_point, line_of_bars):
     """
-    Функция, которая показывает как изменяется профит во времени (каждые 10минут) после входа в позицию
+    Функция, которая показывает как изменяется профит во времени (каждую минуту) после входа в позицию
     :param time_of_bars_ticks_starting_point: Время пересечения ценой линии фрактала. Точка, от которой пойдет
     отсчет времени
     :param line_of_bars: Линия HIGH фрактального бара (условный ордер на покупку BUY stop)
     :return: ...
     """
     flag_by_fractal_line_crossing_ticks = False
-    time_period = 600
+    time_period = 60
     time_point = datetime.timestamp(time_of_bars_ticks_starting_point) + time_period
+    ticks_number = 0
     for ticks in get_ticks_values(symbol_name, time_of_bars_ticks_starting_point, to_date, flags):
 
         # count_of_ticks = ticks[3] - line_of_bars
         # print(f'Текущий тик - {ticks[0]}')
 
         price_movement = {}
-        if not flag_by_fractal_line_crossing_ticks:
+        if ticks_number < 10:
             # print(f'Линия фрактала - {line_of_bars}')
 
             if ticks[0] >= time_point:
-                time_point += 600
+                time_point += 60
                 key = int((ticks[0] - datetime.timestamp(time_of_bars_ticks_starting_point)) / 60)
                 values = int(ticks[3] - line_of_bars)
                 price_movement[key] = values
                 print(price_movement)
+                ticks_number += 1
                 # print(ticks[0], 'Количество тиков = ', count_of_ticks)
                 # print(ticks[0] - datetime.timestamp(time_of_bars_ticks_starting_point))
                 # flag_by_fractal_line_crossing_ticks = True
@@ -283,17 +286,28 @@ def price_movement_over_time(time_of_bars_ticks_starting_point, line_of_bars):
 
 
 # Область проверки функций
-time_of_bars = datetime.fromtimestamp(fractal_detection_up(0)[0] + 60 * 30 * 3)  # пропускаем 3 М30 бара
-# print(time_of_bars)
-line_of_bars = fractal_detection_up(0)[1]
-time_of_bars_m1 = datetime.fromtimestamp((fractal_line_crossing(time_of_bars, line_of_bars)))
-# print(time_of_bars_m1)
-time_of_bars_ticks = datetime.fromtimestamp(fractal_line_crossing_m1(time_of_bars_m1, line_of_bars))
-# print(time_of_bars_ticks)
-time_of_bars_ticks_starting_point = datetime.fromtimestamp(fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars))
-# print(fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars))
-# print(time_of_bars_ticks_starting_point)
-print(price_movement_over_time(time_of_bars_ticks_starting_point, line_of_bars))
+# fractal_detection_up(0)
+for i in fractal_detection_up(0):
+    print(i)
+
+
+
+
+
+
+
+
+# time_of_bars = datetime.fromtimestamp(fractal_detection_up(0)[0] + 60 * 30 * 3)  # пропускаем 3 М30 бара
+# # print(time_of_bars)
+# line_of_bars = fractal_detection_up(0)[1]
+# time_of_bars_m1 = datetime.fromtimestamp((fractal_line_crossing(time_of_bars, line_of_bars)))
+# # print(time_of_bars_m1)
+# time_of_bars_ticks = datetime.fromtimestamp(fractal_line_crossing_m1(time_of_bars_m1, line_of_bars))
+# # print(time_of_bars_ticks)
+# time_of_bars_ticks_starting_point = datetime.fromtimestamp(fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars))
+# # print(fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars))
+# # print(time_of_bars_ticks_starting_point)
+# print(price_movement_over_time(time_of_bars_ticks_starting_point, line_of_bars))
 
 
 
