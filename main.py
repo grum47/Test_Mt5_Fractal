@@ -48,8 +48,8 @@ print(f'До - {to_date}')
 def runtime_calculation(func):
     """
     Функция-декоратор для подсчета времени выполнения другой функции.
-    :param func:
-    :return:
+    :param func: Передаваемая функция
+    :return: Возвращает время затраченное на выполнение функции
     """
     import time
     def wrapper(*args, **kwargs):
@@ -59,14 +59,13 @@ def runtime_calculation(func):
         elapsed_time = end_time - start_time
         # print(f'Прошло времени - {round((elapsed_time), 4)} сек.')
         return res
-
     return wrapper
 
 
 @functools.lru_cache(maxsize=None)
 def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
     """
-    Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 по рабочему таймфрейму
+    Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 по рабочему таймфрейму --- М30 ---
     :param symbol_name: Имя финансового инструмента
     :param frame: Таймфрейм, для которого запрашиваются бары
     :param from_date: Дата, начиная с которой запрашиваются бары. Задается объектом datetime или в виде количества
@@ -87,7 +86,7 @@ def get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):
 def get_one_bars_main_timeframe(symbol_name, frame, from_date, count):
     """
     Функция получения баров из терминала MetaTrader 5, начиная с указанной даты.
-    НЕ ИСПОЛЬЗУЕТСЯ
+    ---------- НЕ ИСПОЛЬЗУЕТСЯ ----------
     :param symbol_name: Имя финансового инструмента
     :param frame: Таймфрейм, для которого запрашиваются бары
     :param from_date: Дата открытия первого бара из запрашиваемой выборки.
@@ -108,7 +107,7 @@ def get_one_bars_main_timeframe(symbol_name, frame, from_date, count):
 @functools.lru_cache(maxsize=None)
 def get_value_bars_m1_timeframe(symbol_name, frame_m1, from_date, to_date):
     """
-    Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 таймфрейм М1
+    Функция получения баров в указанном диапазоне дат из терминала MetaTrader 5 таймфрейм --- М1 ---
     :param symbol_name: Имя финансового инструмента
     :param frame_m1: Таймфрейм, для которого запрашиваются бары (в данной функции только М1 - это необходимо для
                     большей точности в тестировании)
@@ -130,7 +129,7 @@ def get_value_bars_m1_timeframe(symbol_name, frame_m1, from_date, to_date):
 @functools.lru_cache(maxsize=None)
 def get_ticks_values(symbol_name, from_date, to_date, flags):
     """
-    Функция получения тиков в указанном диапазоне дат из терминала MetaTrader 5
+    Функция получения тиков в указанном диапазоне дат из терминала MetaTrader 5 --- ТИКИ ---
     :param symbol_name: Имя финансового инструмента
     :param from_date: Дата, начиная с которой запрашиваются бары. Задается объектом datetime или в виде количества
             секунд, прошедших с 1970.01.01
@@ -156,7 +155,7 @@ def fractal_detection_up(ind: int) -> tuple:
     """
     Функция определения фрактала на рабочем таймфрейме (5 свечей)
     :param ind: Номер индекса, с которого начинается отсчет баров (0 - с самого первого бара)
-    :return: Возвращает значение вершины фрактального бара и времени его формирования на М30
+    :return: Возвращает значение вершины фрактального бара и время начала его формирования на М30
     """
     flag_by_fractal_detection_up = False  # Флаг определения бара как вершины фрактала
     for bars in get_value_bars_main_timeframe(symbol_name, frame, from_date, to_date):  # Перебираем бары на рабочем ТФ
@@ -231,7 +230,7 @@ def fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars):
     """
     Функция определения в какой момент времени цена пересекла линию фрактала на тиковом графике
     :param time_of_bars_ticks: Время начала формирования бара на тиковом графике за полным фракталом
-    :param line_of_bars: Линия хая фрактального бара (условный ордер на покупку BUY stop)
+    :param line_of_bars: Линия HIGH фрактального бара (условный ордер на покупку BUY stop)
     :return: Время начала формирования бара на тиковом графике, от которого пойдет перебор тиков
     """
     flag_by_fractal_line_crossing_ticks = False
@@ -248,8 +247,15 @@ def fractal_line_crossing_ticks(time_of_bars_ticks, line_of_bars):
                 fractal_detection_up(0)
                 # print('не пересеклось на тиковом')
 
-# Функция тестирования
+# Функции тестирования
 def price_movement_over_time(time_of_bars_ticks_starting_point, line_of_bars):
+    """
+    Функция, которая показывает как изменяется профит во времени (каждые 10минут) после входа в позицию
+    :param time_of_bars_ticks_starting_point: Время пересечения ценой линии фрактала. Точка, от которой пойдет
+    отсчет времени
+    :param line_of_bars: Линия HIGH фрактального бара (условный ордер на покупку BUY stop)
+    :return: ...
+    """
     flag_by_fractal_line_crossing_ticks = False
     time_period = 600
     time_point = datetime.timestamp(time_of_bars_ticks_starting_point) + time_period
